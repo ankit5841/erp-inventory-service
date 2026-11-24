@@ -1,0 +1,6 @@
+erp-inventory
+erp-inventory.exe
+*.exe
+*.out
+.env
+.DS_Store

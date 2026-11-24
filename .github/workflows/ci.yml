@@ -1,0 +1,39 @@
+name: ERP Inventory CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: erp_user
+          POSTGRES_PASSWORD: erp_pass
+          POSTGRES_DB: erp_inventory_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U erp_user -d erp_inventory_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Vet and run race-checked unit + PostgreSQL 16 integration tests
+        env:
+          TEST_DATABASE_URL: postgres://erp_user:erp_pass@localhost:5432/erp_inventory_test?sslmode=disable
+        run: |
+          go vet ./...
+          go test -v -race ./...
+      - name: Build binary
+        run: go build ./cmd/server
